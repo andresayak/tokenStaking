@@ -17,6 +17,7 @@ contract Staking {
     mapping(address => Stake) stakes;
     address[] public addressIndices;
     mapping(bytes => uint256) rewards;
+    mapping(address => uint256) lastProfits;
 
     IERC20 public token;
 
@@ -26,36 +27,26 @@ contract Staking {
     constructor (IERC20 _token) public {
         token = _token;
     }
-    /*
-      * Internal Function for transferring tokens for staking.
-      *
-      * @remark Possibly spin this into the controller but for development, keep here
-      * for convenience
-      */
+
     function __transferToken(address _sender, address _recipient, uint256 _amount) private {
-        // Allowance must be set
         token.transferFrom(_sender, _recipient, _amount);
     }
-    /*
-      * Stakes a certain amount of tokens, this MUST transfer the given amount from the user.
-      */
+
     function stake(uint256 amount, bytes memory data) public{
-        //__transferToken(msg.sender, address(this), amount);
         stakes[msg.sender] = Stake(amount, data);
         addressIndices.push(msg.sender);
         totalStaked += amount;
         emit Staked(msg.sender, amount, totalStaked, data);
     }
-    /*
-       * Returns the current total of tokens staked for an address.
-       */
+
     function totalStakedFor(address addr) public view returns (uint256) {
         return stakes[addr].amount;
     }
 
-    function calculateAPY(address addr) public view returns (int256) {
-
-        return 8;
+    function calculateAPY(address addr) public view returns (uint256) {
+        uint profit = lastProfits[addr];
+        uint amount = stakes[addr].amount - profit;
+        return profit.mul(100).div(amount);
     }
 
     function reward(bytes memory data) public returns (int256) {
@@ -68,6 +59,7 @@ contract Staking {
             uint profit = amountToDistribute * totalStakedFor(addr) / totalStaked;
             stakes[addr].amount+= profit;
             stakes[addr].data = data;
+            lastProfits[addr] = profit;
         }
         totalStaked += amountToDistribute;
         rewards[data] = amountToDistribute;

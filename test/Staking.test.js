@@ -83,7 +83,8 @@ describe('Staking', function () {
 
     it('check ary', async function () {
         const [owner, user1, user2] = await ethers.getSigners();
-        await this.staking.connect(user1).stake(100, (new Date()).getTime());
+        const user1amount = 100;
+        await this.staking.connect(user1).stake(user1amount, (new Date()).getTime());
         await this.staking.connect(user2).stake(300, (new Date()).getTime());
 
         await this.staking.reward((new Date()).getTime() + 3600);
@@ -91,9 +92,10 @@ describe('Staking', function () {
         let balance1 = (await this.staking.totalStakedFor(user1.address));
         expect(balance1).to.equal(125);
 
-        const ARY = (balance1 - 100 ) / 100;
-        let ary = (await this.staking.calculateAPY(user1.address));
+        const ARY_expected = Math.floor(((balance1 - user1amount ) / user1amount) * 100);
+        let ARY = (await this.staking.calculateAPY(user1.address));
+        console.log('ARY_expected', ARY_expected);
+        console.log('ARY', ARY.toString());
 
     });
-
 });
